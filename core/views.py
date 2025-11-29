@@ -9,7 +9,7 @@ from django.db.models import Count, Q, F
 # Consolidated Model Imports
 from .models import (
     Student, Teacher, SchoolClass, Attendance, Fee, 
-    Timetable, Result, Quiz, Course, ClassProceeding, 
+    Timetable, Result, Quiz, Course, 
     AttendanceSummary 
 )
 
@@ -17,12 +17,11 @@ from .models import (
 from .serializers import (
     StudentSerializer, TeacherSerializer, SchoolClassSerializer, 
     AttendanceSerializer, FeeSerializer, TimetableSerializer, 
-    ClassProceedingSerializer, ResultSerializer, QuizSerializer,
+    ResultSerializer, QuizSerializer,
     AttendanceSummarySerializer 
 )
 
 # --- CORE VIEWSETS (Student-Specific Filtering) ---
-# These views now only return data belonging to the logged-in user.
 
 class StudentViewSet(viewsets.ModelViewSet):
     """API endpoint to get the single Student record for the logged-in user."""
@@ -30,12 +29,8 @@ class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # 1. Check if the user is logged in
         if not self.request.user.is_authenticated:
             return Student.objects.none()
-            
-        # 2. Filter the Student model based on the logged-in user
-        # Direct filter: Student.user matches the logged-in user object
         return Student.objects.filter(user=self.request.user)
 
 class FeeViewSet(viewsets.ModelViewSet):
@@ -46,8 +41,6 @@ class FeeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Fee.objects.none()
-            
-        # Direct filter by traversing Foreign Key: Fee -> Student -> User
         return Fee.objects.filter(student__user=self.request.user)
 
 class ResultViewSet(viewsets.ModelViewSet):
@@ -58,8 +51,6 @@ class ResultViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Result.objects.none()
-            
-        # Direct filter by traversing Foreign Key: Result -> Student -> User
         return Result.objects.filter(student__user=self.request.user)
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -70,8 +61,6 @@ class QuizViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Quiz.objects.none()
-            
-        # Direct filter by traversing Foreign Key: Quiz -> Student -> User
         return Quiz.objects.filter(student__user=self.request.user)
 
 class AttendanceViewSet(viewsets.ModelViewSet):
@@ -82,8 +71,6 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Attendance.objects.none()
-            
-        # Direct filter by traversing Foreign Key: Attendance -> Student -> User
         return Attendance.objects.filter(student__user=self.request.user)
 
 class ClassProceedingsView(APIView):
@@ -94,13 +81,11 @@ class ClassProceedingsView(APIView):
         if not request.user.is_authenticated:
              return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
              
-        # Find the specific student linked to the logged-in user using direct lookup
         try:
             student = Student.objects.get(user=request.user)
         except Student.DoesNotExist:
              return Response({'error': 'Logged-in user is not linked to a student record.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # The rest of the logic uses the found 'student' object
         attendance_records = Attendance.objects.filter(student=student)
         
         courses = attendance_records.values('course').annotate(
@@ -137,10 +122,8 @@ class SchoolClassViewSet(viewsets.ModelViewSet):
     serializer_class = SchoolClassSerializer
     permission_classes = [IsAuthenticated]
 
-class TimetableViewSet(viewsets.ModelViewSet):
-    queryset = Timetable.objects.all()
-    serializer_class = TimetableSerializer
-    permission_classes = [IsAuthenticated]
+# NOTE: TimetableViewSet removed from generic views to test stabilization.
+# We will check it's registered in urls.py separately if needed.
 
 class AttendanceSummaryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AttendanceSummarySerializer
