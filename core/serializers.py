@@ -8,6 +8,9 @@ from .models import (
 
 # ------------------- Student, Teacher, Class -------------------
 class StudentSerializer(serializers.ModelSerializer):
+    # CRITICAL FIX: Include the SchoolClass name for easy display in Flutter
+    school_class_name = serializers.CharField(source='school_class.name', read_only=True)
+    
     class Meta:
         model = Student
         fields = '__all__'
@@ -34,28 +37,19 @@ class FeeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 # ------------------- Timetable -------------------
-from rest_framework import serializers
-# Make sure to import your Timetable model from wherever it is defined
-# from .models import Timetable 
-
 class TimetableSerializer(serializers.ModelSerializer):
+    # CRITICAL FIX: Return the teacher's full name instead of just the ID.
+    teacher_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = Timetable
-        fields = (
-            'id', 
-            'day', 
-            'subject', 
-            'start_time', 
-            'end_time',
-            'teacher', # The teacher ID
-            
-            # ✅ ALL NEW FIELDS MUST BE INCLUDED HERE ✅
-            'room',    
-            'location', 
-            'section', 
-            'courseCode', # Added from the model
-            'status',     # Added from the model
-        )
+        # Use '__all__' to ensure every new field is included automatically.
+        fields = '__all__' 
+        
+    def get_teacher_name(self, obj):
+        if obj.teacher:
+            return f"{obj.teacher.first_name} {obj.teacher.last_name}"
+        return "TBD"
 
 # ------------------- Results & Quizzes -------------------
 class ResultSerializer(serializers.ModelSerializer):
@@ -82,8 +76,6 @@ class AttendanceSummarySerializer(serializers.ModelSerializer):
     # CRITICAL FIX: The source field must match the model relationship (course)
     # The output field name should be clear, like 'subject_name'
     subject_name = serializers.CharField(source='course.name', read_only=True)
-    
-    # We no longer need student_id in the output since the ViewSet already filters by it.
     
     class Meta:
         model = AttendanceSummary

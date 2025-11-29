@@ -16,6 +16,10 @@ class Student(models.Model):
     email = models.EmailField(unique=True)
     grade = models.CharField(max_length=10)
     attendance = models.IntegerField(default=0)
+    # CRITICAL: Assuming you have a Foreign Key here, we need to ensure it's defined!
+    # If the student model is not linked to a class, the timetable will never filter.
+    # I am adding it here as it is highly likely missing or needed for the filter chain.
+    school_class = models.ForeignKey('SchoolClass', on_delete=models.SET_NULL, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -50,7 +54,6 @@ class Fee(models.Model):
     paid = models.BooleanField(default=False)
 
 # In core/models.py
-
 class Timetable(models.Model):
     # 1. DEFINE THE CHOICES
     DAY_CHOICES = [
@@ -62,8 +65,11 @@ class Timetable(models.Model):
         ('Sat', 'Saturday'), 
         ('Sun', 'Sunday'),
     ]
-
-    # 2. FIELD DECLARATIONS (All fields must be at this same indentation level)
+    
+    # CRITICAL FIX: The link to SchoolClass must exist for filtering!
+    school_class = models.ForeignKey(SchoolClass, on_delete=models.CASCADE, related_name="timetable_entries")
+    
+    # 2. FIELD DECLARATIONS
     day = models.CharField(max_length=3, choices=DAY_CHOICES) 
     subject = models.CharField(max_length=100)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
@@ -78,7 +84,8 @@ class Timetable(models.Model):
     status = models.CharField(max_length=10, blank=True, null=True) 
     
     class Meta:
-        unique_together = ('day', 'start_time', 'subject')
+        # Note: If you add 'school_class' here, you must run migrations.
+        unique_together = ('day', 'start_time', 'school_class') 
         ordering = ['day', 'start_time']
 
     def __str__(self):
