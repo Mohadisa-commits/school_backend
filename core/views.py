@@ -9,7 +9,7 @@ from django.db.models import Count, Q, F
 # Consolidated Model Imports
 from .models import (
     Student, Teacher, SchoolClass, Attendance, Fee, 
-    Timetable, Result, Quiz, Course, 
+    Timetable, Result, Quiz, Course, ClassProceeding, # <-- RESTORED ClassProceeding
     AttendanceSummary 
 )
 
@@ -17,17 +17,16 @@ from .models import (
 from .serializers import (
     StudentSerializer, TeacherSerializer, SchoolClassSerializer, 
     AttendanceSerializer, FeeSerializer, TimetableSerializer, 
+    ClassProceedingSerializer, # <-- RESTORED ClassProceedingSerializer
     ResultSerializer, QuizSerializer,
     AttendanceSummarySerializer 
 )
 
 # --- CORE VIEWSETS (Student-Specific Filtering) ---
-
 class StudentViewSet(viewsets.ModelViewSet):
     """API endpoint to get the single Student record for the logged-in user."""
     serializer_class = StudentSerializer
     permission_classes = [IsAuthenticated]
-
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Student.objects.none()
@@ -37,7 +36,6 @@ class FeeViewSet(viewsets.ModelViewSet):
     """API endpoint to get Fee records specific to the logged-in student."""
     serializer_class = FeeSerializer
     permission_classes = [IsAuthenticated]
-
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Fee.objects.none()
@@ -47,7 +45,6 @@ class ResultViewSet(viewsets.ModelViewSet):
     """API endpoint to get Result records specific to the logged-in student."""
     serializer_class = ResultSerializer
     permission_classes = [IsAuthenticated]
-
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Result.objects.none()
@@ -57,7 +54,6 @@ class QuizViewSet(viewsets.ModelViewSet):
     """API endpoint to get Quiz records specific to the logged-in student."""
     serializer_class = QuizSerializer
     permission_classes = [IsAuthenticated]
-
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Quiz.objects.none()
@@ -67,7 +63,6 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     """API endpoint to get individual Attendance records specific to the logged-in student."""
     serializer_class = AttendanceSerializer
     permission_classes = [IsAuthenticated]
-    
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Attendance.objects.none()
@@ -76,11 +71,9 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 class ClassProceedingsView(APIView):
     """Calculates and returns class proceedings (attendance summary) for the logged-in student."""
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
         if not request.user.is_authenticated:
              return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
-             
         try:
             student = Student.objects.get(user=request.user)
         except Student.DoesNotExist:
@@ -122,12 +115,13 @@ class SchoolClassViewSet(viewsets.ModelViewSet):
     serializer_class = SchoolClassSerializer
     permission_classes = [IsAuthenticated]
 
-# NOTE: TimetableViewSet removed from generic views to test stabilization.
-# We will check it's registered in urls.py separately if needed.
+class TimetableViewSet(viewsets.ModelViewSet): # <-- RESTORED
+    queryset = Timetable.objects.all()
+    serializer_class = TimetableSerializer
+    permission_classes = [IsAuthenticated]
 
 class AttendanceSummaryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AttendanceSummarySerializer
-    
     def get_queryset(self):
         student_id = self.kwargs.get('student_pk') 
         if student_id is not None:
