@@ -26,7 +26,9 @@ if not SECRET_KEY or (SECRET_KEY.endswith('-do-not-use-in-production') and not D
     raise Exception("SECRET_KEY environment variable is not set correctly for production!")
 
 # ALLOWED_HOSTS for Railway deployment
-ALLOWED_HOSTS = ['.up.railway.app', '127.0.0.1']
+ALLOWED_HOSTS = ['school-backend-cf1o.onrender.com',  # <--- YOUR LIVE RENDER DOMAIN
+    '.onrender.com',                      # <--- Allows any Render subdomain
+    '127.0.0.1']
 
 # Application definition
 INSTALLED_APPS = [
