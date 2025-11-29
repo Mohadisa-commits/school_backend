@@ -1,5 +1,5 @@
 """
-Django settings for school_api project, optimized for Railway production deployment.
+Django settings for school_api project, optimized for Render production deployment.
 """
 import os
 import dj_database_url
@@ -13,9 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # 1. DEBUG Status: Read from environment, default to False (production mode)
 DEBUG = os.environ.get('DJANGO_DEBUG') == 'True'
 
-# 2. SECRET_KEY: Read from Railway environment variables
-# If DEBUG is True, it uses the fallback key for local testing.
-# If DEBUG is False (production), it MUST load the key from the environment.
+# 2. SECRET_KEY: Read from Render environment variables
 SECRET_KEY = os.environ.get(
     'SECRET_KEY', 
     'a-safe-fallback-key-for-local-use-only-do-not-use-in-production' 
@@ -25,14 +23,16 @@ SECRET_KEY = os.environ.get(
 if not SECRET_KEY or (SECRET_KEY.endswith('-do-not-use-in-production') and not DEBUG):
     raise Exception("SECRET_KEY environment variable is not set correctly for production!")
 
-# ALLOWED_HOSTS for Railway deployment
-ALLOWED_HOSTS = ['school-backend-cf1o.onrender.com',  # <--- YOUR LIVE RENDER DOMAIN
-    '.onrender.com',                      # <--- Allows any Render subdomain
-    '127.0.0.1']
+# ALLOWED_HOSTS for Render deployment
+ALLOWED_HOSTS = [
+    'school-backend-cf1o.onrender.com', # <--- YOUR LIVE RENDER DOMAIN
+    '.onrender.com',                  # <--- Allows any Render subdomain
+    '127.0.0.1'
+]
 
 # Application definition
 INSTALLED_APPS = [
-    'corsheaders',   
+    'corsheaders',  
     'django.contrib.admin',
     'django.contrib.auth',
     'core', # Assuming this is your main app
@@ -47,7 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # Whitenoise is essential for serving static files in production on Railway
+    # Whitenoise is essential for serving static files in production on Render
     'whitenoise.middleware.WhiteNoiseMiddleware', 
     'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.common.CommonMiddleware',
@@ -86,8 +86,7 @@ USE_TZ = True
 
 
 # --- DATABASE CONFIGURATION ---
-# This block replaces the old SQLite configuration. 
-# It uses dj_database_url to parse the DATABASE_URL environment variable provided by Railway.
+# Uses dj_database_url to parse the DATABASE_URL environment variable provided by Render.
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'), 
@@ -95,11 +94,19 @@ DATABASES = {
     )
 }
 
-# --- STATIC FILES CONFIGURATION ---
-# Essential for production deployment with Whitenoise
-STATIC_URL = '/static/'
+# --- STATIC FILES CONFIGURATION (CRUCIAL FIX) ---
+STATIC_URL = 'static/'
+
+# The directory where Django will collect static files for production
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Tell Django where to look for static files during the 'collectstatic' phase
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+# Configure WhiteNoise to serve compressed static files (FIX for Admin Panel CSS/JS)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # --- REST FRAMEWORK / CORS CONFIGURATION ---
